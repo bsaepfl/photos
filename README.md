@@ -25,4 +25,12 @@ The complete selfie picker and privacy messaging are implemented. The prototype 
 
 ## Deploy to Vercel
 
-Import this repository into Vercel, keep the default Next.js settings, then point `photos.bsaepfl.ch` at the generated Vercel domain. The metadata base is already configured for that subdomain.
+The existing `bsa-epfls-projects/photos` Vercel project serves `photos.bsaepfl.ch`. Each push to `main` runs [the GitHub Actions deployment workflow](.github/workflows/deploy.yml), which builds with the production Vercel configuration, deploys the result, and checks the live homepage. Vercel's own Git deployments are disabled in `vercel.json` to avoid duplicate deployments.
+
+The workflow reads these GitHub Actions settings for this repository:
+
+- Secret `VERCEL_TOKEN`: create a Vercel access token scoped to `bsa-epfls-projects` → `All Projects`, then save it under **Settings → Secrets and variables → Actions → New repository secret**. Never commit the token.
+- Variable `VERCEL_ORG_ID`: `team_gPT08VVEPRob51JPC2BXPBTW`.
+- Variable `VERCEL_PROJECT_ID`: `prj_xMTufaC6lhGa9hBJwCnkAdu8GoUr`.
+
+After adding the secret, run **Actions → Deploy to Vercel → Run workflow** once to verify the setup. Future pushes to `main` deploy automatically.
