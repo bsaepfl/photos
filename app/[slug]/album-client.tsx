@@ -118,7 +118,6 @@ export function AlbumClient({ album }: { album: Album }) {
       </header>
 
       <section className="album-hero">
-        <p className="eyebrow">{album.type} · {album.year}</p>
         <h1>{album.title}</h1>
         <div className="album-meta">
           <span><Icons.calendar />{album.dateLong}</span>
@@ -357,7 +356,6 @@ function FindMeModal({ photos, onClose, onMatches }: { photos: Photo[]; onClose:
       <div className="find-modal">
         <button className="modal-close" onClick={onClose} aria-label="Close"><Icons.close /></button>
         <div className="find-icon"><Icons.userSearch /></div>
-        <p className="eyebrow">Face search</p>
         <h2 id="find-me-title">Find yourself in photos</h2>
         <p className="find-lede">Upload a selfie and we’ll find event photos that contain your face.</p>
         <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(event) => chooseFile(event.target.files?.[0])} />

@@ -18,7 +18,6 @@ export default function HomePage() {
       </header>
 
       <section className="archive-intro">
-        <p className="eyebrow">Photo archive</p>
         <h1>Browse BSA<br className="mobile-break" /> event albums</h1>
         <p className="intro-copy">The people, ideas, and late nights behind our community at EPFL.</p>
       </section>
@@ -41,7 +40,6 @@ export default function HomePage() {
                 <div className="album-details">
                   <span className="album-glyph"><BsaMark /></span>
                   <div className="album-copy">
-                    <span className="album-type">{album.type}</span>
                     <h2>{album.title}</h2>
                     <p><Icons.calendar />{album.date}</p>
                     <p><Icons.location />{album.location}</p>
