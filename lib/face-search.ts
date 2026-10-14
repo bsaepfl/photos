@@ -107,6 +107,11 @@ function nextFrame() {
   return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 }
 
+function optimizedFaceSearchSrc(src: string) {
+  if (!src.startsWith("/")) return src
+  return `/_next/image?url=${encodeURIComponent(src)}&w=1200&q=62`
+}
+
 export async function findMatchingPhotoIds(
   selfieSrc: string,
   photos: Photo[],
@@ -140,7 +145,7 @@ export async function findMatchingPhotoIds(
 
     let embeddings = sessionFaceIndex.get(src)
     if (!embeddings) {
-      const image = await loadImage(src, signal)
+      const image = await loadImage(optimizedFaceSearchSrc(src), signal)
       embeddings = await extractEmbeddings(human, image)
       sessionFaceIndex.set(src, embeddings)
     }

@@ -320,6 +320,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .pagination svg { width: 15px; }
 .pagination div { display: flex; gap: 6px; }
 .pagination div button { width: 38px; }
+.pagination-ellipsis { width: 24px; display: grid; place-items: center; color: var(--dim); font: 400 11px/1 var(--mono); }
 .pagination > span { grid-column: 1 / -1; justify-self: center; color: var(--dim); font: 400 10px/1 var(--mono); }
 .album-footer { padding: 32px 0 50px; border-top: 1px solid var(--line); color: var(--dim); font: 400 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .13em; }
 

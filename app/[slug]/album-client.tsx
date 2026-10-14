@@ -35,7 +35,7 @@ export function AlbumClient({ album }: { album: Album }) {
   const pageCount = Math.max(1, Math.ceil(filteredPhotos.length / PAGE_SIZE))
   const start = (page - 1) * PAGE_SIZE
   const visiblePhotos = filteredPhotos.slice(start, start + PAGE_SIZE)
-  const activePhoto = selected === null ? null : visiblePhotos[selected]
+  const activePhoto = selected === null ? null : filteredPhotos[selected]
 
   const closeLightbox = useCallback(() => {
     setSelected(null)
@@ -47,10 +47,12 @@ export function AlbumClient({ album }: { album: Album }) {
   const movePhoto = useCallback((direction: number) => {
     setSelected((current) => {
       if (current === null) return null
-      return (current + direction + visiblePhotos.length) % visiblePhotos.length
+      const next = (current + direction + filteredPhotos.length) % filteredPhotos.length
+      setPage(Math.floor(next / PAGE_SIZE) + 1)
+      return next
     })
     setShowDownloads(false)
-  }, [visiblePhotos.length])
+  }, [filteredPhotos.length])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -69,14 +71,23 @@ export function AlbumClient({ album }: { album: Album }) {
   }, [selected, showFindMe])
 
   useEffect(() => {
-    const photoId = location.hash.replace("#photo=", "")
-    if (!photoId) return
-    const index = visiblePhotos.findIndex((photo) => photo.id === photoId)
-    if (index >= 0) setSelected(index)
-  }, [visiblePhotos])
+    const openPhotoFromHash = () => {
+      const photoId = window.location.hash.replace("#photo=", "")
+      if (!photoId) return
+      const index = filteredPhotos.findIndex((photo) => photo.id === photoId)
+      if (index >= 0) {
+        setPage(Math.floor(index / PAGE_SIZE) + 1)
+        setSelected(index)
+      }
+    }
+
+    openPhotoFromHash()
+    window.addEventListener("hashchange", openPhotoFromHash)
+    return () => window.removeEventListener("hashchange", openPhotoFromHash)
+  }, [filteredPhotos])
 
   function openPhoto(index: number) {
-    setSelected(index)
+    setSelected(start + index)
     setShowInfo(false)
     setShowDownloads(false)
     history.replaceState(null, "", `#photo=${visiblePhotos[index].id}`)
@@ -173,7 +184,7 @@ export function AlbumClient({ album }: { album: Album }) {
           {pageCount > 1 && (
             <nav className="pagination" aria-label="Photo pages">
               <button disabled={page === 1} onClick={() => { setPage((p) => p - 1); window.scrollTo({ top: 0, behavior: "smooth" }) }}><Icons.chevronLeft /> Previous</button>
-              <div>{Array.from({ length: pageCount }, (_, index) => <button className={page === index + 1 ? "current" : ""} key={index} aria-label={`Page ${index + 1}`} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</div>
+              <div>{paginationItems(page, pageCount).map((item, index) => item === "gap" ? <span className="pagination-ellipsis" key={`gap-${index}`}>…</span> : <button className={page === item ? "current" : ""} key={item} aria-label={`Page ${item}`} onClick={() => setPage(item)}>{item}</button>)}</div>
               <button disabled={page === pageCount} onClick={() => { setPage((p) => p + 1); window.scrollTo({ top: 0, behavior: "smooth" }) }}>Next <Icons.chevronRight /></button>
               <span>{start + 1}–{Math.min(start + PAGE_SIZE, filteredPhotos.length)} of {filteredPhotos.length}</span>
             </nav>
@@ -188,7 +199,7 @@ export function AlbumClient({ album }: { album: Album }) {
       {activePhoto && selected !== null && (
         <Lightbox
           photo={activePhoto}
-          index={start + selected}
+          index={selected}
           total={filteredPhotos.length}
           showInfo={showInfo}
           showDownloads={showDownloads}
@@ -217,6 +228,21 @@ export function AlbumClient({ album }: { album: Album }) {
       )}
     </main>
   )
+}
+
+function paginationItems(page: number, pageCount: number): Array<number | "gap"> {
+  if (pageCount <= 7) return Array.from({ length: pageCount }, (_, index) => index + 1)
+
+  const pages = new Set([1, pageCount, page - 1, page, page + 1])
+  const visiblePages = [...pages].filter((item) => item > 0 && item <= pageCount).sort((a, b) => a - b)
+  const items: Array<number | "gap"> = []
+
+  visiblePages.forEach((item, index) => {
+    if (index > 0 && item - visiblePages[index - 1] > 1) items.push("gap")
+    items.push(item)
+  })
+
+  return items
 }
 
 function Lightbox({ photo, index, total, showInfo, showDownloads, copied, onClose, onPrevious, onNext, onToggleInfo, onToggleDownloads, onShare }: {
@@ -299,6 +325,12 @@ function FindMeModal({ photos, onClose, onMatches }: { photos: Photo[]; onClose:
     setError("")
   }
 
+  function openFilePicker() {
+    if (!inputRef.current) return
+    inputRef.current.value = ""
+    inputRef.current.click()
+  }
+
   async function runSearch() {
     if (!preview) return
     abortRef.current?.abort()
@@ -331,7 +363,7 @@ function FindMeModal({ photos, onClose, onMatches }: { photos: Photo[]; onClose:
         <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(event) => chooseFile(event.target.files?.[0])} />
         <button
           className={`dropzone ${preview ? "has-preview" : ""}`}
-          onClick={() => inputRef.current?.click()}
+          onClick={openFilePicker}
           onDragOver={(event) => event.preventDefault()}
           onDrop={(event) => { event.preventDefault(); chooseFile(event.dataTransfer.files[0]) }}
         >
@@ -355,7 +387,7 @@ function FindMeModal({ photos, onClose, onMatches }: { photos: Photo[]; onClose:
         )}
 
         {status === "done" && matches.length > 0 && <button className="face-search-button" onClick={() => onMatches(matches)}>Show possible matches</button>}
-        {(status === "done" || status === "error") && <button className="face-secondary-button" onClick={() => inputRef.current?.click()}>Choose another selfie</button>}
+        {(status === "done" || status === "error") && <button className="face-secondary-button" onClick={openFilePicker}>Choose another selfie</button>}
         {status === "error" && <div className="face-error" role="alert">{error}</div>}
         <p className="privacy-note">Private by design: processing happens in this tab. Your selfie and face data are never uploaded or saved.</p>
       </div>
