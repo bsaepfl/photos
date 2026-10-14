@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { BsaMark } from "@/components/bsa-mark"
 import { Icons } from "@/components/icons"
 import type { Album, Photo } from "@/data/albums"
+import { findMatchingPhotoIds, type FaceSearchProgress } from "@/lib/face-search"
 
 type LayoutMode = "justified" | "large" | "grid"
 const PAGE_SIZE = 8
@@ -20,14 +21,16 @@ export function AlbumClient({ album }: { album: Album }) {
   const [showDownloads, setShowDownloads] = useState(false)
   const [showFindMe, setShowFindMe] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [faceMatchIds, setFaceMatchIds] = useState<string[] | null>(null)
 
   const filteredPhotos = useMemo(() => {
     const term = activeQuery.trim().toLowerCase()
-    if (!term) return album.photos
-    return album.photos.filter((photo) =>
-      [photo.filename, photo.alt, ...photo.tags].join(" ").toLowerCase().includes(term),
-    )
-  }, [activeQuery, album.photos])
+    return album.photos.filter((photo) => {
+      const matchesFace = faceMatchIds === null || faceMatchIds.includes(photo.id)
+      const matchesText = !term || [photo.filename, photo.alt, ...photo.tags].join(" ").toLowerCase().includes(term)
+      return matchesFace && matchesText
+    })
+  }, [activeQuery, album.photos, faceMatchIds])
 
   const pageCount = Math.max(1, Math.ceil(filteredPhotos.length / PAGE_SIZE))
   const start = (page - 1) * PAGE_SIZE
@@ -143,6 +146,13 @@ export function AlbumClient({ album }: { album: Album }) {
         </div>
       </section>
 
+      {faceMatchIds !== null && (
+        <div className="face-filter-banner" role="status">
+          <span><Icons.userSearch />Showing {faceMatchIds.length} possible {faceMatchIds.length === 1 ? "match" : "matches"}</span>
+          <button onClick={() => setFaceMatchIds(null)}>Show all photos <Icons.close /></button>
+        </div>
+      )}
+
       {filteredPhotos.length ? (
         <>
           <section className={`photo-grid ${layout}`} aria-label="Event photos">
@@ -192,7 +202,19 @@ export function AlbumClient({ album }: { album: Album }) {
         />
       )}
 
-      {showFindMe && <FindMeModal onClose={() => setShowFindMe(false)} />}
+      {showFindMe && (
+        <FindMeModal
+          photos={album.photos}
+          onClose={() => setShowFindMe(false)}
+          onMatches={(matches) => {
+            setQuery("")
+            setActiveQuery("")
+            setFaceMatchIds(matches)
+            setPage(1)
+            setShowFindMe(false)
+          }}
+        />
+      )}
     </main>
   )
 }
@@ -252,13 +274,20 @@ function PhotoInfo({ photo }: { photo: Photo }) {
   )
 }
 
-function FindMeModal({ onClose }: { onClose: () => void }) {
+function FindMeModal({ photos, onClose, onMatches }: { photos: Photo[]; onClose: () => void; onMatches: (matches: string[]) => void }) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
-  const [status, setStatus] = useState<"idle" | "searching" | "ready">("idle")
+  const [status, setStatus] = useState<"idle" | "searching" | "done" | "error">("idle")
+  const [progress, setProgress] = useState<FaceSearchProgress | null>(null)
+  const [matches, setMatches] = useState<string[]>([])
+  const [error, setError] = useState("")
 
-  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview) }, [preview])
+  useEffect(() => () => {
+    abortRef.current?.abort()
+    if (preview) URL.revokeObjectURL(preview)
+  }, [preview])
 
   function chooseFile(nextFile?: File) {
     if (!nextFile || nextFile.size > 5 * 1024 * 1024 || !nextFile.type.startsWith("image/")) return
@@ -266,11 +295,29 @@ function FindMeModal({ onClose }: { onClose: () => void }) {
     setFile(nextFile)
     setPreview(URL.createObjectURL(nextFile))
     setStatus("idle")
+    setProgress(null)
+    setError("")
   }
 
-  function runDemo() {
+  async function runSearch() {
+    if (!preview) return
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
     setStatus("searching")
-    window.setTimeout(() => setStatus("ready"), 900)
+    setMatches([])
+    setError("")
+
+    try {
+      const matchIds = await findMatchingPhotoIds(preview, photos, setProgress, controller.signal)
+      if (controller.signal.aborted) return
+      setMatches(matchIds)
+      setStatus("done")
+    } catch (searchError) {
+      if (searchError instanceof DOMException && searchError.name === "AbortError") return
+      setError(searchError instanceof Error ? searchError.message : "Local face search could not be completed.")
+      setStatus("error")
+    }
   }
 
   return (
@@ -290,9 +337,27 @@ function FindMeModal({ onClose }: { onClose: () => void }) {
         >
           {preview ? <Image src={preview} alt="Selfie preview" fill unoptimized /> : <><Icons.upload /><strong>Drop your photo here or click to browse</strong><span>JPG, PNG, or WebP under 5 MB</span></>}
         </button>
-        {file && status !== "ready" && <button className="face-search-button" onClick={runDemo} disabled={status === "searching"}>{status === "searching" ? "Preparing private search…" : "Find my photos"}</button>}
-        {status === "ready" && <div className="integration-note"><Icons.check /><div><strong>Selfie flow ready</strong><span>Connect the production face-matching endpoint before launch. This prototype does not upload or retain your selfie.</span></div></div>}
-        <p className="privacy-note">Your selfie stays on this device in the prototype.</p>
+        {file && status === "idle" && <button className="face-search-button" onClick={runSearch}>Find my photos</button>}
+
+        {status === "searching" && (
+          <div className="face-progress" aria-live="polite">
+            <span className="face-spinner" />
+            <div><strong>{progress?.message ?? "Starting private search…"}</strong><span>No images or face data are being uploaded.</span></div>
+            {progress?.phase === "album" && <progress value={progress.current + 1} max={Math.max(progress.total, 1)} />}
+          </div>
+        )}
+
+        {status === "done" && (
+          <div className="face-result" aria-live="polite">
+            <Icons.check />
+            <div><strong>{matches.length ? `${matches.length} possible ${matches.length === 1 ? "match" : "matches"} found` : "No confident matches found"}</strong><span>{matches.length ? "Review the results—local recognition can make mistakes." : "Try another well-lit, front-facing selfie."}</span></div>
+          </div>
+        )}
+
+        {status === "done" && matches.length > 0 && <button className="face-search-button" onClick={() => onMatches(matches)}>Show possible matches</button>}
+        {(status === "done" || status === "error") && <button className="face-secondary-button" onClick={() => inputRef.current?.click()}>Choose another selfie</button>}
+        {status === "error" && <div className="face-error" role="alert">{error}</div>}
+        <p className="privacy-note">Private by design: processing happens in this tab. Your selfie and face data are never uploaded or saved.</p>
       </div>
     </div>
   )

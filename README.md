@@ -19,9 +19,11 @@ Open `http://localhost:3000`.
 
 The current repository includes a compact sample collection sourced from the BSA main website. For a large production collection, keep the same data shape but serve image variants from object storage (Cloudflare R2, S3, or Cloudinary) rather than committing originals to Git.
 
-## Face search
+## Private face search
 
-The complete selfie picker and privacy messaging are implemented. The prototype deliberately keeps the selfie local and does not pretend to perform biometric matching. Before launch, connect the final action to a consent-reviewed face-search service or remove the `Find Me` control. Face descriptors should be processed server-side, encrypted at rest, scoped per event, and deleted on a short retention schedule.
+Face matching runs entirely in the visitor's browser with `@vladmandic/human`. The browser downloads only the face detection, alignment, and embedding models from this site, scans the current album locally, and compares those faces with an embedding generated from the visitor's selfie. The selfie and all generated embeddings stay in memory for the current tab and are never uploaded or persisted.
+
+The first search in an album can take a moment because its photos are indexed on the visitor's device. Repeated searches in the same tab reuse the in-memory index. Matching is probabilistic, so the interface labels results as possible matches and asks visitors to review them.
 
 ## Deploy to Vercel
 

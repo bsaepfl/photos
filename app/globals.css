@@ -275,6 +275,26 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .find-me-button:hover { transform: translateY(-2px); background: #fff; }
 .find-me-button svg { width: 18px; }
 
+.face-filter-banner {
+  min-height: 52px;
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid rgba(102,245,188,.2);
+  border-radius: 10px;
+  background: rgba(102,245,188,.055);
+  color: var(--green);
+  font-size: 12px;
+}
+.face-filter-banner span, .face-filter-banner button { display: flex; align-items: center; gap: 8px; }
+.face-filter-banner svg { width: 17px; }
+.face-filter-banner button { border: 0; padding: 7px; background: transparent; color: var(--muted); cursor: pointer; }
+.face-filter-banner button:hover { color: var(--text); }
+.face-filter-banner button svg { width: 14px; }
+
 .photo-grid { padding: 4px 0 32px; }
 .photo-grid.justified { columns: 3; column-gap: 8px; }
 .photo-grid.justified .photo-tile { display: block; margin: 0 0 8px; break-inside: avoid; }
@@ -362,6 +382,20 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .dropzone.has-preview img { object-fit: contain; padding: 10px; }
 .face-search-button { width: 100%; height: 46px; margin-top: 12px; border: 0; border-radius: 10px; background: var(--text); color: var(--navy-deep); font-weight: 500; cursor: pointer; }
 .face-search-button:disabled { color: var(--dim); }
+.face-secondary-button { width: 100%; height: 42px; margin-top: 8px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; }
+.face-secondary-button:hover { border-color: var(--line-strong); color: var(--text); }
+.face-progress, .face-result { display: grid; grid-template-columns: 24px 1fr; gap: 12px; align-items: start; margin-top: 12px; padding: 14px; border: 1px solid rgba(102,245,188,.2); border-radius: 10px; background: rgba(102,245,188,.055); }
+.face-progress div, .face-result div { display: flex; flex-direction: column; gap: 4px; }
+.face-progress strong, .face-result strong { font-size: 12px; font-weight: 500; }
+.face-progress div span, .face-result div span { color: var(--muted); font-size: 10px; line-height: 1.5; }
+.face-progress progress { grid-column: 1 / -1; width: 100%; height: 3px; border: 0; border-radius: 99px; overflow: hidden; background: rgba(255,255,255,.08); }
+.face-progress progress::-webkit-progress-bar { background: rgba(255,255,255,.08); }
+.face-progress progress::-webkit-progress-value { background: var(--green); }
+.face-progress progress::-moz-progress-bar { background: var(--green); }
+.face-spinner { width: 19px; height: 19px; border: 2px solid rgba(102,245,188,.2); border-top-color: var(--green); border-radius: 50%; animation: face-spin .8s linear infinite; }
+@keyframes face-spin { to { transform: rotate(360deg); } }
+.face-result > svg { width: 20px; color: var(--green); }
+.face-error { margin-top: 10px; padding: 12px 14px; border: 1px solid rgba(248,113,113,.25); border-radius: 9px; background: rgba(248,113,113,.06); color: #fca5a5; font-size: 11px; line-height: 1.5; }
 .integration-note { display: flex; align-items: flex-start; gap: 12px; margin-top: 12px; padding: 14px; border: 1px solid rgba(102,245,188,.2); border-radius: 10px; background: rgba(102,245,188,.055); }
 .integration-note > svg { flex: 0 0 auto; width: 19px; color: var(--green); }
 .integration-note div { display: flex; flex-direction: column; gap: 4px; }
@@ -404,6 +438,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   .album-hero h1 { font-size: clamp(52px, 16vw, 76px); }
   .album-meta { margin-top: 29px; flex-direction: column; gap: 10px; }
   .album-tools { margin: 0 -16px; padding: 18px 16px 20px; }
+  .face-filter-banner { margin: 0 -10px 12px; flex-direction: column; align-items: flex-start; gap: 3px; }
   .search-button { width: 82px; }
   .photo-grid { margin: 0 -10px; }
   .photo-grid.justified { column-gap: 5px; }
