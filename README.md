@@ -17,7 +17,7 @@ Open `http://localhost:3000`.
 2. Add an album entry in `data/albums.ts` and include each photo's searchable tags and metadata.
 3. Run `npm run build` before deployment.
 
-The current archive contains the 114-photo collection from The Hackathon, held at EPFL's BC Building on October 10–11, 2026. The committed files are web-optimized copies capped at 2400 px; keep the source originals outside the repository. For future large collections, keep the same data shape but consider serving image variants from object storage (Cloudflare R2, S3, or Cloudinary).
+The current archive contains The Hackathon and Binance Tour collections from 2026. The committed files are web-optimized copies capped at 2400 px; keep the source originals outside the repository. For future large collections, keep the same data shape but consider serving image variants from object storage (Cloudflare R2, S3, or Cloudinary).
 
 ## Private face search
 
